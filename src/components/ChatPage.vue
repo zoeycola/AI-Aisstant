@@ -7,7 +7,8 @@
       </div> -->
       <div class="header-center">
         <div class="avatar-wrapper">
-          <Icon name="robot-o" size="32" color="#fff" />
+          <!-- <Icon name="robot-o" size="32" color="#fff" /> -->
+          <img src="../assets/image/assistant-avatar.jpeg" alt="avatar" class="avatar" />
         </div>
         <div class="header-info">
           <h1 class="chat-title">weekend的小助手🐄</h1>
@@ -26,8 +27,8 @@
     <div ref="messageList" class="message-list">
       <div class="welcome-card">
         <Icon name="sparkles" size="48" color="#ff2c55" />
-        <h2>你好！</h2>
-        <p>我是你的AI助手，有什么可以帮你的？</p>
+        <h2>hi～宝贝☀️</h2>
+        <p>我是你的AI助手盆栽🪴，有什么可以帮你的？</p>
       </div>
       
       <ChatMessage 
@@ -36,6 +37,8 @@
         :message="message" 
         @scrollToBottom="scrollToBottom"
         @resetAiStatus="resetStatus"
+        @copy="handleCopy"
+        @regenerate="handleRegenerate"
       />
       
       <!-- <div v-if="isTyping" class="typing-indicator">
@@ -54,7 +57,7 @@
 
 <script setup lang="ts">
 import { ref, nextTick} from 'vue'
-import { Icon } from 'vant'
+import { Icon, Toast } from 'vant'
 import ChatMessage from './ChatMessage.vue'
 import ChatInput from './ChatInput.vue'
 import { invokeAI } from '../utils/ai/langchain-invoke.js'
@@ -162,6 +165,51 @@ const handleSend = async (content: string) => {
 
   console.log('messages==',messages.value)
 }
+
+// 处理复制
+const handleCopy = (content: string) => {
+  console.log('复制内容:', content)
+  Toast.success('复制成功😊～')
+  // 可以添加复制成功提示
+}
+
+// 处理重新生成
+const handleRegenerate = async (message: Message) => {
+  // 找到最后一条用户消息作为重新生成的依据
+  const userMessages = messages.value.filter(m => m.isUser)
+  const lastUserMessage = userMessages[userMessages.length - 1]
+  
+  if (lastUserMessage) {
+    // 更新消息为思考中状态
+    const msgIndex = messages.value.findIndex(msg => msg.id === message.id)
+    if (msgIndex !== -1) {
+      messages.value[msgIndex] = {
+        ...messages.value[msgIndex],
+        content: '正在思考中🤔...',
+        isThinking: true
+      }
+      await scrollToBottom()
+      
+      // 重新调用AI
+      try {
+        const aiResponse = await invokeAI(lastUserMessage.content)
+        messages.value[msgIndex] = {
+          ...messages.value[msgIndex],
+          content: aiResponse,
+          isThinking: false
+        }
+      } catch (error) {
+        messages.value[msgIndex] = {
+          ...messages.value[msgIndex],
+          content: '抱歉，暂时无法获取回复，请稍后重试',
+          isThinking: false
+        }
+      } finally {
+        await scrollToBottom()
+      }
+    }
+  }
+}
 </script>
 
 <style scoped>
@@ -204,6 +252,12 @@ const handleSend = async (content: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  img {
+    width: 100%;
+    height: 100%;
+    border-radius: 100%;
+    object-fit: cover;
+  }
 }
 
 .header-info {

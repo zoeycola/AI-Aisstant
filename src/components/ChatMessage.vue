@@ -18,6 +18,16 @@
           </div>
           <div v-else class="markdown-content" v-html="displayedContent"></div>
         </div>
+        <div v-if="!message.isUser && !message.isThinking" class="message-toolbar">
+          <button class="toolbar-btn" @click="handleCopy">
+            <img src="../assets/icon/icon-copy.png" alt="" class="copy-icon">
+            <!-- <span>复制</span> -->
+          </button>
+          <button class="toolbar-btn" @click="handleRegenerate">
+            <img src="../assets/icon/icon-reset.png" alt="" class="copy-icon">
+            <!-- <span>重新生成</span> -->
+          </button>
+        </div>
       </div>
       <div class="message-time">{{ formatTime(message.timestamp) }}</div>
     </div>
@@ -51,6 +61,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'scrollToBottom'): void
   (e: 'resetAiStatus'): void
+  (e: 'copy', content: string): void
+  (e: 'regenerate', message: Message): void
 }>()
 
 const displayedContent = ref('')
@@ -71,6 +83,29 @@ const scrollToBottom = () => {
 
 const resetAiStatus = () => {
   emit('resetAiStatus')
+}
+
+// 复制内容
+const handleCopy = async () => {
+  try {
+    await navigator.clipboard.writeText(props.message.content)
+    // 可以添加提示用户复制成功的逻辑
+    emit('copy', props.message.content)
+  } catch (err) {
+    // 降级方案：使用 textarea
+    const textarea = document.createElement('textarea')
+    textarea.value = props.message.content
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+    emit('copy', props.message.content)
+  }
+}
+
+// 重新生成
+const handleRegenerate = () => {
+  emit('regenerate', props.message)
 }
 
 // 模拟打字效果
@@ -164,6 +199,16 @@ watch(() => props.message.content, () => {
 .message-content {
   max-width: 80%;
   margin: 0 12px;
+}
+.message-toolbar{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  img {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+  }
 }
 
 .message-bubble {
@@ -364,5 +409,43 @@ watch(() => props.message.content, () => {
     transform: scale(1);
     opacity: 1;
   }
+}
+
+/* 消息操作栏 */
+.message-toolbar {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  padding-left: 4px;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background:none;
+  border: none;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #ff2c55;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  &:first-child {
+   padding-left: 0;
+  }
+}
+
+.toolbar-btn:hover {
+  /* background: rgba(255, 44, 85, 0.15); */
+  transform: scale(1.02);
+}
+
+.toolbar-btn:active {
+  transform: scale(0.98);
+}
+
+.toolbar-btn span {
+  line-height: 1;
 }
 </style>
